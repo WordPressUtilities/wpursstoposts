@@ -26,9 +26,9 @@ Hooks
 Todo
 ---
 
-* [*] Set crontab to avoid background checks.
-* [*] Import images.
-* [*] More hooks.
+* [x] Set crontab to avoid background checks.
+* [x] Import images.
+* [x] More hooks.
 * [ ] Create taxonomy from feed url.
 * [ ] Add sources from an admin page.
 * [ ] Settings from an admin page.
