@@ -13,6 +13,7 @@ function basic_wpursstoposts_feeds($feeds) {
 }
 ```
 
+
 Hooks
 ---
 
@@ -29,8 +30,10 @@ Todo
 * [x] Set crontab to avoid background checks.
 * [x] Import images.
 * [x] More hooks.
-* [ ] Create taxonomy from feed url.
+* [*] Create taxonomy from feed url.
+* [ ] Use WPU Post types & Taxos if available.
 * [ ] Add sources from an admin page.
 * [ ] Settings from an admin page.
 * [ ] Create post thumbnail with first image.
+* [ ] Enhance import perfs for multiples feeds.
 
