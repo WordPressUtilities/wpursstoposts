@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU RSS to posts
 Plugin URI: https://github.com/WordPressUtilities/wpursstoposts
-Version: 0.3
+Version: 0.4
 Description: Easily import RSS into posts
 Author: Darklg
 Author URI: http://darklg.me/
@@ -16,6 +16,7 @@ class wpursstoposts {
     private $maxitems = 15;
     private $posttype = 'rssitems';
     private $taxonomy = 'rssfeeds';
+    private $cacheduration = 600;
     private $importimg = true;
     private $hookcron = 'wpursstoposts_crontab';
 
@@ -25,6 +26,7 @@ class wpursstoposts {
         $this->posttype = apply_filters('wpursstoposts_posttype', $this->posttype);
         $this->taxonomy = apply_filters('wpursstoposts_taxonomy', $this->taxonomy);
         $this->importimg = apply_filters('wpursstoposts_importimg', $this->importimg);
+        $this->cacheduration = apply_filters('wpursstoposts_cacheduration', $this->cacheduration);
     }
 
     public function init() {
@@ -52,6 +54,8 @@ class wpursstoposts {
             $this->posttype,
             $taxonomy_info
         );
+
+        add_filter('wputaxometas_fields', array(&$this, 'set_wputaxometas_fields'));
 
         // Launch cron every
         if (!wp_next_scheduled($this->hookcron)) {
@@ -83,9 +87,8 @@ class wpursstoposts {
         $nb_imports = (count($feeds) + 1) * $this->maxitems;
 
         // Retrieve latest imports
-         $latest_imports = $wpdb->get_col("SELECT meta_value FROM $wpdb->postmeta WHERE meta_key = 'rss_permalink' LIMIT 0,$nb_imports");
+        $latest_imports = $wpdb->get_col("SELECT meta_value FROM $wpdb->postmeta WHERE meta_key = 'rss_permalink' LIMIT 0,$nb_imports");
         foreach ($feeds as $feed) {
-
             $this->import_feed($feed, $latest_imports);
         }
     }
@@ -103,12 +106,7 @@ class wpursstoposts {
         $maxitems = $feed->get_item_quantity($this->maxitems);
         $feed_items = $feed->get_items(0, $maxitems);
 
-        $feed_title = $feed->get_title();
-        $feed_source = get_term_by('name', $feed_title, $this->taxonomy);
-        if ($feed_source === false) {
-            wp_insert_term($feed_title,$this->taxonomy);
-            $feed_source = get_term_by('name', $feed_title, $this->taxonomy);
-        }
+        $feed_source = $this->get_feed_source_by_feed($feed);
 
         foreach ($feed_items as $item) {
             if (!in_array($item->get_permalink(), $latest_imports)) {
@@ -116,6 +114,29 @@ class wpursstoposts {
             }
         }
 
+    }
+
+    public function get_feed_source_by_feed($feed) {
+        global $wpdb;
+        $feed_title = $feed->get_title();
+        $feed_source = get_term_by('name', $feed_title, $this->taxonomy);
+        // Create feed
+        if ($feed_source === false) {
+            wp_insert_term($feed_title, $this->taxonomy, array(
+                'description' => $feed->get_description()
+            ));
+            $feed_source = get_term_by('name', $feed_title, $this->taxonomy);
+            // Insert feed image if available
+            if ($feed_image = $feed->get_image_url()) {
+                // Upload image
+                $image = media_sideload_image($feed_image, false, 'src');
+                // Extract attachment id
+                $id = $wpdb->get_var("SELECT ID FROM {$wpdb->posts} WHERE guid='$src'");
+                add_term_meta($feed_source->term_id, 'rssfeeds_thumbnail', $id);
+            }
+
+        }
+        return $feed_source;
     }
 
     public function create_post_from_feed_item($item, $feed_source) {
@@ -156,7 +177,7 @@ class wpursstoposts {
         // For each image found
         foreach ($matches[0] as $img_url) {
             // Import image
-            $image = media_sideload_image($img_url, $post_id, '');
+            $image = media_sideload_image($img_url, $post_id, 'src');
             if (!is_wp_error($image)) {
                 preg_match($regex_image, $image, $new_image_url);
                 if (isset($new_image_url[0]) && !empty($new_image_url[0])) {
@@ -172,11 +193,24 @@ class wpursstoposts {
         ));
     }
 
+    /* Taxo metas
+    -------------------------- */
+
+    public function set_wputaxometas_fields($fields) {
+        $fields['rssfeeds_thumbnail'] = array(
+            'label' => 'Thumbnail',
+            'taxonomies' => array($this->taxonomy),
+
+            'type' => 'attachment'
+        );
+        return $fields;
+    }
+
     /* Values
     -------------------------- */
 
     public function set_cache_duration() {
-        return 600;
+        return $this->cacheduration;
     }
 }
 
