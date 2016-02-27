@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU RSS to posts
 Plugin URI: https://github.com/WordPressUtilities/wpursstoposts
-Version: 0.4
+Version: 0.5
 Description: Easily import RSS into posts
 Author: Darklg
 Author URI: http://darklg.me/
@@ -21,12 +21,61 @@ class wpursstoposts {
     private $hookcron = 'wpursstoposts_crontab';
 
     public function __construct() {
-        add_action('init', array(&$this, 'init'));
+        add_action('init', array(&$this,
+            'init'
+        ));
+        add_action('plugins_loaded', array(&$this,
+            'plugins_loaded'
+        ));
+        $this->set_values();
+    }
+
+    public function set_values() {
+        // Max items nb
+        $maxitems = get_option('wpursstoposts_maxitems');
+        if (is_numeric($maxitems)) {
+            $this->maxitems = $maxitems;
+        }
         $this->maxitems = apply_filters('wpursstoposts_maxitems', $this->maxitems);
+
+        // Import images
+        $importimg = get_option('wpursstoposts_importimg');
+        if (in_array($importimg, array('0', '1'))) {
+            $this->importimg = ($importimg == '1');
+        }
+        $this->importimg = apply_filters('wpursstoposts_importimg', $this->importimg);
+
+        // Feeds
+        $base_feeds = array();
+        $feeds = explode("\n", get_option('wpursstoposts_feeds'));
+        if (is_array($feeds)) {
+            foreach ($feeds as $feed_url) {
+                $url = trim($feed_url);
+                if (filter_var($url, FILTER_VALIDATE_URL) !== FALSE) {
+                    $base_feeds[] = $url;
+                }
+            }
+        }
+
+        $this->feeds = apply_filters('wpursstoposts_feeds', $base_feeds);
+
+        // Core values
         $this->posttype = apply_filters('wpursstoposts_posttype', $this->posttype);
         $this->taxonomy = apply_filters('wpursstoposts_taxonomy', $this->taxonomy);
-        $this->importimg = apply_filters('wpursstoposts_importimg', $this->importimg);
         $this->cacheduration = apply_filters('wpursstoposts_cacheduration', $this->cacheduration);
+    }
+
+    public function plugins_loaded() {
+        // Options
+        add_filter('wpu_options_tabs', array(&$this,
+            'options_tabs'
+        ), 11, 3);
+        add_filter('wpu_options_boxes', array(&$this,
+            'options_boxes'
+        ), 11, 3);
+        add_filter('wpu_options_fields', array(&$this,
+            'options_fields'
+        ), 11, 3);
     }
 
     public function init() {
@@ -38,7 +87,8 @@ class wpursstoposts {
                 'singular_name' => __('RSS item')
             ),
             'public' => true,
-            'has_archive' => true
+            'has_archive' => true,
+            'supports' => array('title', 'editor', 'thumbnail')
         ));
 
         register_post_type($this->posttype, $posttype_info);
@@ -55,6 +105,7 @@ class wpursstoposts {
             $taxonomy_info
         );
 
+        // Taxo fields
         add_filter('wputaxometas_fields', array(&$this, 'set_wputaxometas_fields'));
 
         // Launch cron every
@@ -66,6 +117,7 @@ class wpursstoposts {
     }
 
     public function crontab_action() {
+        set_time_limit(0);
         $this->parse_feeds();
     }
 
@@ -83,12 +135,11 @@ class wpursstoposts {
         }
 
         // Extract RSS feeds
-        $feeds = apply_filters('wpursstoposts_feeds', array());
-        $nb_imports = (count($feeds) + 1) * $this->maxitems;
+        $nb_imports = (count($this->feeds) + 1) * $this->maxitems;
 
         // Retrieve latest imports
         $latest_imports = $wpdb->get_col("SELECT meta_value FROM $wpdb->postmeta WHERE meta_key = 'rss_permalink' LIMIT 0,$nb_imports");
-        foreach ($feeds as $feed) {
+        foreach ($this->feeds as $feed) {
             $this->import_feed($feed, $latest_imports);
         }
     }
@@ -175,13 +226,25 @@ class wpursstoposts {
         }
 
         // For each image found
-        foreach ($matches[0] as $img_url) {
+        foreach ($matches[0] as $match_nb => $img_url) {
             // Import image
             $image = media_sideload_image($img_url, $post_id, 'src');
             if (!is_wp_error($image)) {
                 preg_match($regex_image, $image, $new_image_url);
                 if (isset($new_image_url[0]) && !empty($new_image_url[0])) {
                     $post_content = str_replace($img_url, $new_image_url[0], $post_content);
+                }
+                if ($match_nb == 0) {
+                    // Set first image as thumbnail image
+                    $attachments = get_posts(array(
+                        'post_type' => 'attachment',
+                        'posts_per_page' => 1,
+                        'post_status' => 'any',
+                        'post_parent' => $post_id
+                    ));
+                    if (!empty($attachments)) {
+                        set_post_thumbnail($post_id, $attachments[0]->ID);
+                    }
                 }
             }
         }
@@ -193,6 +256,44 @@ class wpursstoposts {
         ));
     }
 
+    /* ----------------------------------------------------------
+      Options for config
+    ---------------------------------------------------------- */
+
+    public function options_tabs($tabs) {
+        $tabs['rss_tab'] = array(
+            'name' => 'Plugin : RSS to posts'
+        );
+        return $tabs;
+    }
+
+    public function options_boxes($boxes) {
+        $boxes['rss_config'] = array(
+            'tab' => 'rss_tab',
+            'name' => 'RSS to posts'
+        );
+        return $boxes;
+    }
+
+    public function options_fields($options) {
+        $options['wpursstoposts_maxitems'] = array(
+            'label' => __('Max items'),
+            'box' => 'rss_config',
+            'type' => 'number'
+        );
+        $options['wpursstoposts_importimg'] = array(
+            'label' => __('Import images'),
+            'box' => 'rss_config',
+            'type' => 'select'
+        );
+        $options['wpursstoposts_feeds'] = array(
+            'label' => __('Feeds'),
+            'box' => 'rss_config',
+            'type' => 'textarea'
+        );
+        return $options;
+    }
+
     /* Taxo metas
     -------------------------- */
 
@@ -200,7 +301,6 @@ class wpursstoposts {
         $fields['rssfeeds_thumbnail'] = array(
             'label' => 'Thumbnail',
             'taxonomies' => array($this->taxonomy),
-
             'type' => 'attachment'
         );
         return $fields;

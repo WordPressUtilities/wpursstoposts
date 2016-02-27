@@ -34,9 +34,10 @@ Todo
 * [x] Import images.
 * [x] More hooks.
 * [x] Create taxonomy from feed url.
+* [x] Add sources from an admin page.
+* [x] Settings from an admin page.
+* [x] Create post thumbnail with first image.
 * [ ] Use WPU Post types & Taxos if available.
-* [ ] Add sources from an admin page.
-* [ ] Settings from an admin page.
-* [ ] Create post thumbnail with first image.
 * [ ] Enhance import perfs for multiples feeds.
+* [ ] Use native settings.
 
