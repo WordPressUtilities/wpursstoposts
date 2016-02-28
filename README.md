@@ -37,7 +37,7 @@ Todo
 * [x] Add sources from an admin page.
 * [x] Settings from an admin page.
 * [x] Create post thumbnail with first image.
-* [ ] Use WPU Post types & Taxos if available.
+* [x] Use WPU Post types & Taxos if available.
 * [ ] Enhance import perfs for multiples feeds.
 * [ ] Use native settings.
 

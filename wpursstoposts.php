@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU RSS to posts
 Plugin URI: https://github.com/WordPressUtilities/wpursstoposts
-Version: 0.5
+Version: 0.6
 Description: Easily import RSS into posts
 Author: Darklg
 Author URI: http://darklg.me/
@@ -22,7 +22,13 @@ class wpursstoposts {
 
     public function __construct() {
         add_action('init', array(&$this,
-            'init'
+            'set_cron'
+        ));
+        add_action('plugins_loaded', array(&$this,
+            'set_posttype_taxos'
+        ));
+        add_action('init', array(&$this,
+            'set_posttype_taxos_classic'
         ));
         add_action('plugins_loaded', array(&$this,
             'plugins_loaded'
@@ -78,37 +84,65 @@ class wpursstoposts {
         ), 11, 3);
     }
 
-    public function init() {
+    public function set_posttype_taxos() {
 
         // RSS Post type
-        $posttype_info = apply_filters('wpursstoposts_posttype_info', array(
+        $this->posttype_info = apply_filters('wpursstoposts_posttype_info', array(
+            'name' => __('RSS item'),
+            'plural' => __('RSS items'),
             'labels' => array(
                 'name' => __('RSS items'),
                 'singular_name' => __('RSS item')
             ),
+            'menu_icon' => 'dashicons-rss',
             'public' => true,
             'has_archive' => true,
             'supports' => array('title', 'editor', 'thumbnail')
         ));
 
-        register_post_type($this->posttype, $posttype_info);
-
-        $taxonomy_info = apply_filters('wpursstoposts_taxonomy_info', array(
+        $this->taxonomy_info = apply_filters('wpursstoposts_taxonomy_info', array(
             'label' => __('RSS Feeds'),
-            'hierarchical' => true
+            'name' => __('RSS Feed'),
+            'hierarchical' => true,
+            'post_type' => $this->posttype
         ));
 
-        // RSS Taxonomy
-        register_taxonomy(
-            $this->taxonomy,
-            $this->posttype,
-            $taxonomy_info
-        );
+        if (class_exists('wputh_add_post_types_taxonomies')) {
+            add_filter('wputh_get_posttypes', array(&$this, 'wputh_set_theme_posttypes'));
+            add_filter('wputh_get_taxonomies', array(&$this, 'wputh_set_theme_taxonomies'));
+        }
 
         // Taxo fields
         add_filter('wputaxometas_fields', array(&$this, 'set_wputaxometas_fields'));
+    }
 
-        // Launch cron every
+    public function set_posttype_taxos_classic() {
+        if (class_exists('wputh_add_post_types_taxonomies')) {
+            return;
+        }
+        // Register post type for items
+        register_post_type($this->posttype, $this->posttype_info);
+
+        // Register taxonomy for feeds
+        register_taxonomy(
+            $this->taxonomy,
+            $this->posttype,
+            $this->taxonomy_info
+        );
+
+    }
+    public function wputh_set_theme_posttypes($post_types) {
+        $post_types[$this->posttype] = $this->posttype_info;
+        return $post_types;
+    }
+
+    public function wputh_set_theme_taxonomies($taxonomies) {
+        $taxonomies[$this->taxonomy] = $this->taxonomy_info;
+        return $taxonomies;
+    }
+
+    public function set_cron() {
+        // Schedule cron
         if (!wp_next_scheduled($this->hookcron)) {
             wp_schedule_event(time(), 'hourly', $this->hookcron);
         }
@@ -139,17 +173,16 @@ class wpursstoposts {
 
         // Retrieve latest imports
         $latest_imports = $wpdb->get_col("SELECT meta_value FROM $wpdb->postmeta WHERE meta_key = 'rss_permalink' LIMIT 0,$nb_imports");
+        add_filter('wp_feed_cache_transient_lifetime', array(&$this, 'set_cache_duration'));
         foreach ($this->feeds as $feed) {
             $this->import_feed($feed, $latest_imports);
         }
+        remove_filter('wp_feed_cache_transient_lifetime', array(&$this, 'set_cache_duration'));
     }
 
     public function import_feed($url, $latest_imports) {
 
-        add_filter('wp_feed_cache_transient_lifetime', array(&$this, 'set_cache_duration'));
         $feed = fetch_feed($url);
-        remove_filter('wp_feed_cache_transient_lifetime', array(&$this, 'set_cache_duration'));
-
         if (is_wp_error($feed)) {
             return false;
         }
