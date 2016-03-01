@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU RSS to posts
 Plugin URI: https://github.com/WordPressUtilities/wpursstoposts
-Version: 0.6
+Version: 0.6.1
 Description: Easily import RSS into posts
 Author: Darklg
 Author URI: http://darklg.me/
@@ -213,10 +213,15 @@ class wpursstoposts {
             // Insert feed image if available
             if ($feed_image = $feed->get_image_url()) {
                 // Upload image
-                $image = media_sideload_image($feed_image, false, 'src');
+                $src = media_sideload_image($feed_image, false, '', 'src');
+
                 // Extract attachment id
-                $id = $wpdb->get_var("SELECT ID FROM {$wpdb->posts} WHERE guid='$src'");
-                add_term_meta($feed_source->term_id, 'rssfeeds_thumbnail', $id);
+                $att_id = $wpdb->get_var($wpdb->prepare(
+                    "SELECT ID FROM {$wpdb->posts} WHERE guid='%s'",
+                    $src
+                ));
+
+                add_term_meta($feed_source->term_id, 'rssfeeds_thumbnail', $att_id);
             }
 
         }
