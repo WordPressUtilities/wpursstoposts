@@ -20,6 +20,8 @@ Hooks
 * wpursstoposts_maxitems : (int) Numbers of items parsed (default: 15).
 * wpursstoposts_cacheduration : (int) Cache duration for feeds in ms (default: 600).
 * wpursstoposts_importimg : (bool) Import post images or not. (default: true).
+* wpursstoposts_importonlyfirstimg : (bool) Import only first imaeg. (default: true).
+* wpursstoposts_importdraft : (bool) Import post as draft. (default: true).
 * wpursstoposts_posttype : (string) Post type slug used to store imported items (default: rssitems).
 * wpursstoposts_posttype_info : (array) Args for default post type.
 * wpursstoposts_taxonomy : (string) Taxonomy slug used to store feeds (default: rssfeeds).

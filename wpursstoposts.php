@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU RSS to posts
 Plugin URI: https://github.com/WordPressUtilities/wpursstoposts
-Version: 0.6.1
+Version: 1.0
 Description: Easily import RSS into posts
 Author: Darklg
 Author URI: http://darklg.me/
@@ -16,44 +16,77 @@ class wpursstoposts {
     private $maxitems = 15;
     private $posttype = 'rssitems';
     private $taxonomy = 'rssfeeds';
-    private $cacheduration = 600;
+    private $cacheduration = 30;
     private $importimg = true;
+    private $importdraft = true;
+    private $importonlyfirstimg = true;
     private $hookcron = 'wpursstoposts_crontab';
+    private $option_id = 'wpursstoposts_options';
 
     public function __construct() {
+        add_action('init', array(&$this,
+            'init'
+        ));
         add_action('init', array(&$this,
             'set_cron'
         ));
         add_action('plugins_loaded', array(&$this,
-            'set_posttype_taxos'
+            'load_plugin_textdomain'
         ));
-        add_action('init', array(&$this,
-            'set_posttype_taxos_classic'
+        add_action('plugins_loaded', array(&$this,
+            'set_posttype_taxos'
         ));
         add_action('plugins_loaded', array(&$this,
             'plugins_loaded'
+        ));
+        add_action('init', array(&$this,
+            'set_posttype_taxos_classic'
         ));
         $this->set_values();
     }
 
     public function set_values() {
+
+        $this->options = array(
+            'plugin_publicname' => 'RSS to posts',
+            'plugin_name' => 'RSS to posts',
+            'plugin_userlevel' => 'manage_options',
+            'plugin_id' => 'wpursstoposts',
+            'plugin_pageslug' => 'wpursstoposts'
+        );
+
+        $settings = get_option($this->option_id);
+
         // Max items nb
-        $maxitems = get_option('wpursstoposts_maxitems');
-        if (is_numeric($maxitems)) {
-            $this->maxitems = $maxitems;
+        if (isset($settings['maxitems']) && is_numeric($settings['maxitems'])) {
+            $this->maxitems = $settings['maxitems'];
         }
         $this->maxitems = apply_filters('wpursstoposts_maxitems', $this->maxitems);
 
         // Import images
-        $importimg = get_option('wpursstoposts_importimg');
-        if (in_array($importimg, array('0', '1'))) {
-            $this->importimg = ($importimg == '1');
+        if (isset($settings['import_images']) && in_array($settings['import_images'], array('0', '1'))) {
+            $this->importimg = ($settings['import_images'] == '1');
         }
         $this->importimg = apply_filters('wpursstoposts_importimg', $this->importimg);
 
+        // Import images
+        if (isset($settings['import_onlyfirstimage']) && in_array($settings['import_onlyfirstimage'], array('0', '1'))) {
+            $this->importonlyfirstimg = ($settings['import_onlyfirstimage'] == '1');
+        }
+        $this->importonlyfirstimg = apply_filters('wpursstoposts_importonlyfirstimg', $this->importonlyfirstimg);
+
+        // Import as Draft
+        if (isset($settings['import_draft']) && in_array($settings['import_draft'], array('0', '1'))) {
+            $this->importdraft = ($settings['import_draft'] == '1');
+        }
+        $this->importdraft = apply_filters('wpursstoposts_importdraft', $this->importdraft);
+
         // Feeds
         $base_feeds = array();
-        $feeds = explode("\n", get_option('wpursstoposts_feeds'));
+        $feeds = array();
+        if (isset($settings['feeds'])) {
+            $feeds = explode("\n", $settings['feeds']);
+        }
         if (is_array($feeds)) {
             foreach ($feeds as $feed_url) {
                 $url = trim($feed_url);
@@ -71,7 +104,68 @@ class wpursstoposts {
         $this->cacheduration = apply_filters('wpursstoposts_cacheduration', $this->cacheduration);
     }
 
+    public function init() {
+
+        /* Settings */
+        $this->settings_details = array(
+            'plugin_id' => 'wpursstoposts',
+            'option_id' => $this->option_id,
+            'sections' => array(
+                'import' => array(
+                    'name' => __('Import Settings', 'wpursstoposts')
+                )
+            )
+        );
+        $this->settings = array(
+            'feeds' => array(
+                'section' => 'import',
+                'type' => 'textarea',
+                'label' => __('Feeds', 'wpursstoposts')
+            ),
+            'maxitems' => array(
+                'section' => 'import',
+                'type' => 'number',
+                'label' => __('Max items', 'wpursstoposts')
+            ),
+            'import_images' => array(
+                'section' => 'import',
+                'type' => 'checkbox',
+                'label_check' => __('Import images in posts.', 'wpursstoposts'),
+                'label' => __('Import images', 'wpursstoposts')
+            ),
+            'import_onlyfirstimage' => array(
+                'section' => 'import',
+                'type' => 'checkbox',
+                'label_check' => __('Only the first image in the post content will be imported.', 'wpursstoposts'),
+                'label' => __('Import only first', 'wpursstoposts')
+            ),
+            'import_draft' => array(
+                'section' => 'import',
+                'type' => 'checkbox',
+                'label_check' => __('Posts are created with a draft status.', 'wpursstoposts'),
+                'label' => __('Import as draft', 'wpursstoposts')
+            )
+        );
+
+        if (is_admin()) {
+            /* Messages */
+            include 'inc/WPUBaseMessages.php';
+            $this->messages = new \wpursstoposts\WPUBaseMessages($this->options['plugin_id']);
+
+            /* Settings */
+
+            include 'inc/WPUBaseSettings.php';
+            new \wpursstoposts\WPUBaseSettings($this->settings_details, $this->settings);
+        }
+    }
+
+    public function load_plugin_textdomain() {
+        load_plugin_textdomain('wpursstoposts', false, dirname(plugin_basename(__FILE__)) . '/lang/');
+
+    }
+
     public function plugins_loaded() {
+
         // Options
         add_filter('wpu_options_tabs', array(&$this,
             'options_tabs'
@@ -82,17 +176,27 @@ class wpursstoposts {
         add_filter('wpu_options_fields', array(&$this,
             'options_fields'
         ), 11, 3);
+
+        if (is_admin()) {
+            // Admin page
+            add_action('admin_menu', array(&$this,
+                'admin_menu'
+            ));
+            add_action('admin_post_wpursstoposts_postaction', array(&$this,
+                'postAction'
+            ));
+        }
     }
 
     public function set_posttype_taxos() {
 
         // RSS Post type
         $this->posttype_info = apply_filters('wpursstoposts_posttype_info', array(
-            'name' => __('RSS item'),
-            'plural' => __('RSS items'),
+            'name' => __('RSS item', 'wpursstoposts'),
+            'plural' => __('RSS items', 'wpursstoposts'),
             'labels' => array(
-                'name' => __('RSS items'),
-                'singular_name' => __('RSS item')
+                'name' => __('RSS items', 'wpursstoposts'),
+                'singular_name' => __('RSS item', 'wpursstoposts')
             ),
             'menu_icon' => 'dashicons-rss',
             'public' => true,
@@ -101,8 +205,9 @@ class wpursstoposts {
         ));
 
         $this->taxonomy_info = apply_filters('wpursstoposts_taxonomy_info', array(
-            'label' => __('RSS Feeds'),
-            'name' => __('RSS Feed'),
+            'label' => __('RSS Feeds', 'wpursstoposts'),
+            'plural' => __('RSS Feeds', 'wpursstoposts'),
+            'name' => __('RSS Feed', 'wpursstoposts'),
             'hierarchical' => true,
             'post_type' => $this->posttype
         ));
@@ -183,6 +288,7 @@ class wpursstoposts {
     public function import_feed($url, $latest_imports) {
 
         $feed = fetch_feed($url);
+        $feed->force_feed(true);
         if (is_wp_error($feed)) {
             return false;
         }
@@ -232,7 +338,7 @@ class wpursstoposts {
         $post_id = wp_insert_post(array(
             'post_title' => wp_strip_all_tags($item->get_title()),
             'post_content' => $item->get_content(),
-            'post_status' => 'publish',
+            'post_status' => $this->importdraft ? 'draft' : 'publish',
             'post_type' => $this->posttype,
             'post_date' => $item->get_date('Y-m-d H:i:s')
         ));
@@ -283,6 +389,9 @@ class wpursstoposts {
                     if (!empty($attachments)) {
                         set_post_thumbnail($post_id, $attachments[0]->ID);
                     }
+                    if ($this->importonlyfirstimg) {
+                        break;
+                    }
                 }
             }
         }
@@ -295,42 +404,58 @@ class wpursstoposts {
     }
 
     /* ----------------------------------------------------------
-      Options for config
+      Admin menu
     ---------------------------------------------------------- */
 
-    public function options_tabs($tabs) {
-        $tabs['rss_tab'] = array(
-            'name' => 'Plugin : RSS to posts'
-        );
-        return $tabs;
+    public function admin_menu() {
+        add_submenu_page('edit.php?post_type=' . $this->posttype, $this->options['plugin_name'] . ' - ' . __('Settings'), __('Import Settings', 'wpursstoposts'), $this->options['plugin_userlevel'], $this->options['plugin_pageslug'], array(&$this,
+            'admin_settings'
+        ), '', 110);
     }
 
-    public function options_boxes($boxes) {
-        $boxes['rss_config'] = array(
-            'tab' => 'rss_tab',
-            'name' => 'RSS to posts'
-        );
-        return $boxes;
+    public function admin_settings() {
+
+        echo '<div class="wrap"><h1>' . get_admin_page_title() . '</h1>';
+
+        echo '<h2>' . __('Tools') . '</h2>';
+        echo '<form action="' . admin_url('admin-post.php') . '" method="post">';
+        echo '<input type="hidden" name="action" value="wpursstoposts_postaction">';
+        $schedule = wp_next_scheduled($this->hookcron);
+        $seconds = $schedule - time();
+        $minutes = 0;
+        if ($seconds >= 60) {
+            $minutes = (int) ($seconds / 60);
+            $seconds = $seconds % 60;
+        }
+        echo '<p>' . sprintf(__('Next automated import in %s’%s’’', 'wpursstoposts'), $minutes, $seconds) . '</p>';
+
+        submit_button(__('Import now', 'wpursstoposts'), 'primary', 'import_now');
+
+        echo '</form>';
+        echo '<hr />';
+
+        echo '<form action="' . admin_url('options.php') . '" method="post">';
+        settings_fields($this->settings_details['option_id']);
+        do_settings_sections($this->options['plugin_id']);
+        echo submit_button(__('Save Changes', 'wpursstoposts'));
+        echo '</form>';
+        echo '</div>';
     }
 
-    public function options_fields($options) {
-        $options['wpursstoposts_maxitems'] = array(
-            'label' => __('Max items'),
-            'box' => 'rss_config',
-            'type' => 'number'
-        );
-        $options['wpursstoposts_importimg'] = array(
-            'label' => __('Import images'),
-            'box' => 'rss_config',
-            'type' => 'select'
-        );
-        $options['wpursstoposts_feeds'] = array(
-            'label' => __('Feeds'),
-            'box' => 'rss_config',
-            'type' => 'textarea'
-        );
-        return $options;
+    public function postAction() {
+        if (isset($_POST['import_now'])) {
+            set_time_limit(0);
+            $this->parse_feeds();
+            $this->messages->set_message('imported_nb', __('RSS feeds are up to date', 'wpursstoposts'));
+        }
+
+        wp_safe_redirect(wp_get_referer());
+        die();
     }
+
+    /* ----------------------------------------------------------
+      Options for config
+    ---------------------------------------------------------- */
 
     /* Taxo metas
     -------------------------- */
