@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU RSS to posts
 Plugin URI: https://github.com/WordPressUtilities/wpursstoposts
-Version: 1.0
+Version: 1.1
 Description: Easily import RSS into posts
 Author: Darklg
 Author URI: http://darklg.me/
@@ -166,17 +166,6 @@ class wpursstoposts {
 
     public function plugins_loaded() {
 
-        // Options
-        add_filter('wpu_options_tabs', array(&$this,
-            'options_tabs'
-        ), 11, 3);
-        add_filter('wpu_options_boxes', array(&$this,
-            'options_boxes'
-        ), 11, 3);
-        add_filter('wpu_options_fields', array(&$this,
-            'options_fields'
-        ), 11, 3);
-
         if (is_admin()) {
             // Admin page
             add_action('admin_menu', array(&$this,
@@ -252,18 +241,21 @@ class wpursstoposts {
             wp_schedule_event(time(), 'hourly', $this->hookcron);
         }
 
-        add_action($this->hookcron, array(&$this, 'crontab_action'));
+        $callback_cron = array(&$this, 'crontab_action');
+        if (!has_action($this->hookcron, $callback_cron)) {
+            add_action($this->hookcron, $callback_cron);
+        }
     }
 
     public function crontab_action() {
         set_time_limit(0);
-        $this->parse_feeds();
+        $this->parse_feeds(true);
     }
 
     /* Import
     -------------------------- */
 
-    public function parse_feeds() {
+    public function parse_feeds($from_cron = false) {
 
         global $wpdb;
         include_once ABSPATH . WPINC . '/feed.php';
@@ -275,14 +267,27 @@ class wpursstoposts {
 
         // Extract RSS feeds
         $nb_imports = (count($this->feeds) + 1) * $this->maxitems;
+        $nb_imported = 0;
 
         // Retrieve latest imports
-        $latest_imports = $wpdb->get_col("SELECT meta_value FROM $wpdb->postmeta WHERE meta_key = 'rss_permalink' LIMIT 0,$nb_imports");
+        $latest_imports = $wpdb->get_col("SELECT meta_value FROM $wpdb->postmeta WHERE meta_key = 'rss_permalink'  ORDER BY meta_id DESC LIMIT 0,200");
         add_filter('wp_feed_cache_transient_lifetime', array(&$this, 'set_cache_duration'));
         foreach ($this->feeds as $feed) {
-            $this->import_feed($feed, $latest_imports);
+            $nb_imported += $this->import_feed($feed, $latest_imports);
         }
         remove_filter('wp_feed_cache_transient_lifetime', array(&$this, 'set_cache_duration'));
+
+        if (!$from_cron) {
+            if ($nb_imported > 0) {
+                $message = __('%s new item', 'wpursstoposts');
+                if ($nb_imported > 1) {
+                    $message = __('%s new items', 'wpursstoposts');
+                }
+                $this->messages->set_message('imported_nb', sprintf($message, $nb_imported));
+            } else {
+                $this->messages->set_message('imported_none', __('No new items imported', 'wpursstoposts'));
+            }
+        }
     }
 
     public function import_feed($url, $latest_imports) {
@@ -293,6 +298,8 @@ class wpursstoposts {
             return false;
         }
 
+        $import_number = 0;
+
         $maxitems = $feed->get_item_quantity($this->maxitems);
         $feed_items = $feed->get_items(0, $maxitems);
 
@@ -300,9 +307,14 @@ class wpursstoposts {
 
         foreach ($feed_items as $item) {
             if (!in_array($item->get_permalink(), $latest_imports)) {
-                $this->create_post_from_feed_item($item, $feed_source);
+                $_post_creation = $this->create_post_from_feed_item($item, $feed_source);
+                if (is_numeric($_post_creation)) {
+                    $import_number++;
+                }
             }
         }
+
+        return $import_number;
 
     }
 
@@ -446,7 +458,6 @@ class wpursstoposts {
         if (isset($_POST['import_now'])) {
             set_time_limit(0);
             $this->parse_feeds();
-            $this->messages->set_message('imported_nb', __('RSS feeds are up to date', 'wpursstoposts'));
         }
 
         wp_safe_redirect(wp_get_referer());

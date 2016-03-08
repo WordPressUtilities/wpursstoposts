@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: WPU RSS to posts\n"
-"POT-Creation-Date: 2016-03-07 17:56+0100\n"
+"POT-Creation-Date: 2016-03-08 22:52+0100\n"
 "PO-Revision-Date: \n"
 "Last-Translator: Darklg <darklg.blog@gmail.com>\n"
 "Language-Team: \n"
@@ -16,7 +16,7 @@ msgstr ""
 "X-Poedit-SearchPath-0: ../.\n"
 
 #: .././inc/WPUBaseSettings.php:32 .././wpursstoposts.php:115
-#: .././wpursstoposts.php:411
+#: .././wpursstoposts.php:423
 msgid "Import Settings"
 msgstr "Réglages d'import"
 
@@ -52,43 +52,59 @@ msgstr "Les articles sont créés avec un statut \"brouillon\"."
 msgid "Import as draft"
 msgstr "Importer comme brouillon"
 
-#: .././wpursstoposts.php:195 .././wpursstoposts.php:199
+#: .././wpursstoposts.php:184 .././wpursstoposts.php:188
 msgid "RSS item"
 msgstr "Article RSS"
 
-#: .././wpursstoposts.php:196 .././wpursstoposts.php:198
+#: .././wpursstoposts.php:185 .././wpursstoposts.php:187
 msgid "RSS items"
 msgstr "Articles RSS"
 
-#: .././wpursstoposts.php:208 .././wpursstoposts.php:209
+#: .././wpursstoposts.php:197 .././wpursstoposts.php:198
 msgid "RSS Feeds"
 msgstr "Flux RSS"
 
-#: .././wpursstoposts.php:210
+#: .././wpursstoposts.php:199
 msgid "RSS Feed"
 msgstr "Flux RSS"
 
-#: .././wpursstoposts.php:411
+#: .././wpursstoposts.php:282
+#, php-format
+msgid "%s new item"
+msgstr "%s nouvel article"
+
+#: .././wpursstoposts.php:284
+#, php-format
+msgid "%s new items"
+msgstr "%s nouveaux articles"
+
+#: .././wpursstoposts.php:288
+msgid "No new items imported"
+msgstr "Aucun nouvel article importé"
+
+#: .././wpursstoposts.php:423
 msgid "Settings"
 msgstr "Réglages"
 
-#: .././wpursstoposts.php:420
+#: .././wpursstoposts.php:432
 msgid "Tools"
 msgstr "Outils"
 
-#: .././wpursstoposts.php:430
+#: .././wpursstoposts.php:442
 #, php-format
 msgid "Next automated import in %s’%s’’"
 msgstr "Prochain import automatique dans %s min et %s s"
 
-#: .././wpursstoposts.php:432
+#: .././wpursstoposts.php:444
 msgid "Import now"
 msgstr "Importer maintenant"
 
-#: .././wpursstoposts.php:440
+#: .././wpursstoposts.php:452
 msgid "Save Changes"
 msgstr "Sauvegarder les modifications"
 
-#: .././wpursstoposts.php:449
-msgid "RSS feeds are up to date"
-msgstr "Les flux RSS sont à jour"
+#~ msgid "%s new item(s)"
+#~ msgstr "%s nouveau(x) article(s)"
+
+#~ msgid "RSS feeds are up to date"
+#~ msgstr "Les flux RSS sont à jour"

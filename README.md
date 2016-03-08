@@ -42,4 +42,5 @@ Todo
 * [x] Use WPU Post types & Taxos if available.
 * [ ] Enhance import perfs for multiples feeds.
 * [ ] Use native settings.
+* [ ] Uninstall.
 
