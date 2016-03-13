@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU RSS to posts
 Plugin URI: https://github.com/WordPressUtilities/wpursstoposts
-Version: 1.1
+Version: 1.2
 Description: Easily import RSS into posts
 Author: Darklg
 Author URI: http://darklg.me/
@@ -17,6 +17,7 @@ class wpursstoposts {
     private $posttype = 'rssitems';
     private $taxonomy = 'rssfeeds';
     private $cacheduration = 30;
+    private $user_cap = 'moderate_comments';
     private $importimg = true;
     private $importdraft = true;
     private $importonlyfirstimg = true;
@@ -47,10 +48,12 @@ class wpursstoposts {
 
     public function set_values() {
 
+        $this->user_cap = apply_filters('wpursstoposts_user_cap', $this->user_cap);
+
         $this->options = array(
             'plugin_publicname' => 'RSS to posts',
             'plugin_name' => 'RSS to posts',
-            'plugin_userlevel' => 'manage_options',
+            'plugin_userlevel' => $this->user_cap,
             'plugin_id' => 'wpursstoposts',
             'plugin_pageslug' => 'wpursstoposts'
         );
@@ -110,12 +113,15 @@ class wpursstoposts {
         $this->settings_details = array(
             'plugin_id' => 'wpursstoposts',
             'option_id' => $this->option_id,
+            'user_cap' => $this->user_cap,
             'sections' => array(
                 'import' => array(
+                    'user_cap' => $this->user_cap,
                     'name' => __('Import Settings', 'wpursstoposts')
                 )
             )
         );
+
         $this->settings = array(
             'feeds' => array(
                 'section' => 'import',

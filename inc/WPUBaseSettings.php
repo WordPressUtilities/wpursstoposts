@@ -4,7 +4,7 @@ namespace wpursstoposts;
 /*
 Class Name: WPU Base Settings
 Description: A class to handle native settings in WordPress admin
-Version: 0.2
+Version: 0.4.1
 Author: Darklg
 Author URI: http://darklg.me/
 License: MIT License
@@ -20,6 +20,13 @@ class WPUBaseSettings {
         add_action('admin_init', array(&$this,
             'add_settings'
         ));
+        add_filter('option_page_capability_' . $this->settings_details['option_id'], array(&$this,
+            'set_min_capability'
+        ));
+    }
+
+    public function set_min_capability() {
+        return $this->settings_details['user_cap'];
     }
 
     public function set_datas($settings_details, $settings) {
@@ -34,6 +41,14 @@ class WPUBaseSettings {
                 )
             );
         }
+        if (!isset($settings_details['user_cap'])) {
+            $settings_details['user_cap'] = 'manage_options';
+        }
+        foreach ($settings_details['sections'] as $id => $section) {
+            if (!isset($section['user_cap'])) {
+                $settings_details['sections'][$id]['user_cap'] = 'manage_options';
+            }
+        }
         $this->settings_details = $settings_details;
         if (!is_array($settings)) {
             $settings = array(
@@ -45,6 +60,16 @@ class WPUBaseSettings {
             );
         }
 
+        $default_section = key($this->settings_details['sections']);
+        foreach ($settings as $id => $input) {
+            $settings[$id]['label'] = isset($input['label']) ? $input['label'] : '';
+            $settings[$id]['label_check'] = isset($input['label_check']) ? $input['label_check'] : '';
+            $settings[$id]['help'] = isset($input['help']) ? $input['help'] : '';
+            $settings[$id]['type'] = isset($input['type']) ? $input['type'] : 'text';
+            $settings[$id]['section'] = isset($input['section']) ? $input['section'] : $default_section;
+            $settings[$id]['user_cap'] = $this->settings_details['sections'][$settings[$id]['section']]['user_cap'];
+        }
+
         $this->settings = $settings;
     }
 
@@ -52,17 +77,17 @@ class WPUBaseSettings {
         register_setting($this->settings_details['option_id'], $this->settings_details['option_id'], array(&$this,
             'options_validate'
         ));
-        $default_section = key($this->settings_details['sections']);
         foreach ($this->settings_details['sections'] as $id => $section) {
-            add_settings_section($id, $section['name'], '', $this->settings_details['plugin_id']);
+            if (current_user_can($section['user_cap'])) {
+                add_settings_section($id, $section['name'], '', $this->settings_details['plugin_id']);
+            }
         }
 
         foreach ($this->settings as $id => $input) {
-            $this->settings[$id]['label'] = isset($input['label']) ? $input['label'] : '';
-            $this->settings[$id]['label_check'] = isset($input['label_check']) ? $input['label_check'] : '';
-            $this->settings[$id]['help'] = isset($input['help']) ? $input['help'] : '';
-            $this->settings[$id]['type'] = isset($input['type']) ? $input['type'] : 'text';
-            $this->settings[$id]['section'] = isset($input['section']) ? $input['section'] : $default_section;
+            // Hide input if not in capacity
+            if (!current_user_can($input['user_cap'])) {
+                continue;
+            }
             add_settings_field($id, $this->settings[$id]['label'], array(&$this,
                 'render__field'
             ), $this->settings_details['plugin_id'], $this->settings[$id]['section'], array(
@@ -79,8 +104,11 @@ class WPUBaseSettings {
     public function options_validate($input) {
         $options = get_option($this->settings_details['option_id']);
         foreach ($this->settings as $id => $setting) {
-            if (!isset($input[$id])) {
-                $input[$id] = '0';
+            // Set a default value
+            // - if not sent
+            // - if user is not allowed
+            if (!isset($input[$id]) || !current_user_can($setting['user_cap'])) {
+                $input[$id] = isset($options[$id]) ? $options[$id] : '0';
             }
             $option_id = $input[$id];
             switch ($setting['type']) {
@@ -129,7 +157,6 @@ class WPUBaseSettings {
         case 'text':
             echo '<input ' . $name . ' ' . $id . ' type="' . $args['type'] . '" value="' . esc_attr($options[$args['id']]) . '" />';
         }
-
         if (!empty($args['help'])) {
             echo '<div><small>' . $args['help'] . '</small></div>';
         }
