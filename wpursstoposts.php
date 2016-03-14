@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU RSS to posts
 Plugin URI: https://github.com/WordPressUtilities/wpursstoposts
-Version: 1.2
+Version: 1.3
 Description: Easily import RSS into posts
 Author: Darklg
 Author URI: http://darklg.me/
@@ -327,13 +327,31 @@ class wpursstoposts {
     public function get_feed_source_by_feed($feed) {
         global $wpdb;
         $feed_title = $feed->get_title();
-        $feed_source = get_term_by('name', $feed_title, $this->taxonomy);
+        $feed_source = false;
+
+        // Try to obtain feed by url
+        $feed_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT term_id FROM {$wpdb->termmeta} WHERE meta_key = 'rssfeeds_src' && meta_value='%s'",
+            $feed->feed_url
+        ));
+        if (!$feed_id) {
+            $feed_source = get_term_by('name', $feed_title, $this->taxonomy);
+            // Insert meta src
+            if ($feed_source !== false) {
+                add_term_meta($feed_source->term_id, 'rssfeeds_src', $feed->feed_url);
+            }
+        } else {
+            $feed_source = get_term_by('id', $feed_id, $this->taxonomy);
+        }
+
         // Create feed
         if ($feed_source === false) {
             wp_insert_term($feed_title, $this->taxonomy, array(
                 'description' => $feed->get_description()
             ));
             $feed_source = get_term_by('name', $feed_title, $this->taxonomy);
+            add_term_meta($feed_source->term_id, 'rssfeeds_src', $feed->feed_url);
+
             // Insert feed image if available
             if ($feed_image = $feed->get_image_url()) {
                 // Upload image
@@ -433,7 +451,7 @@ class wpursstoposts {
 
     public function admin_settings() {
 
-        echo '<div class="wrap"><h1>' . get_admin_page_title() . '</h1>';
+        echo '<div class="wrap"><h1>' . apply_filters('wpursstoposts_admin_page_title', get_admin_page_title()) . '</h1>';
 
         echo '<h2>' . __('Tools') . '</h2>';
         echo '<form action="' . admin_url('admin-post.php') . '" method="post">';
@@ -482,6 +500,11 @@ class wpursstoposts {
             'label' => 'Thumbnail',
             'taxonomies' => array($this->taxonomy),
             'type' => 'attachment'
+        );
+        $fields['rssfeeds_src'] = array(
+            'label' => 'Source',
+            'taxonomies' => array($this->taxonomy),
+            'type' => 'url'
         );
         return $fields;
     }
