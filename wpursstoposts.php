@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU RSS to posts
 Plugin URI: https://github.com/WordPressUtilities/wpursstoposts
-Version: 1.3
+Version: 1.4
 Description: Easily import RSS into posts
 Author: Darklg
 Author URI: http://darklg.me/
@@ -313,6 +313,7 @@ class wpursstoposts {
 
         foreach ($feed_items as $item) {
             if (!in_array($item->get_permalink(), $latest_imports)) {
+
                 $_post_creation = $this->create_post_from_feed_item($item, $feed_source);
                 if (is_numeric($_post_creation)) {
                     $import_number++;
@@ -386,6 +387,12 @@ class wpursstoposts {
         // Set feed
         wp_set_post_terms($post_id, $feed_source->term_id, $this->taxonomy);
 
+        // Enclosure
+        if ($enclosure = $item->get_enclosure()) {
+            $image = media_sideload_image($enclosure->link, $post_id, 'src');
+            $this->set_first_image_as_thumbnail($post_id);
+        }
+
         // Extract images
         if ($this->importimg) {
             $this->import_images_from_content($post_id, $item->get_content());
@@ -415,16 +422,7 @@ class wpursstoposts {
                     $post_content = str_replace($img_url, $new_image_url[0], $post_content);
                 }
                 if ($match_nb == 0) {
-                    // Set first image as thumbnail image
-                    $attachments = get_posts(array(
-                        'post_type' => 'attachment',
-                        'posts_per_page' => 1,
-                        'post_status' => 'any',
-                        'post_parent' => $post_id
-                    ));
-                    if (!empty($attachments)) {
-                        set_post_thumbnail($post_id, $attachments[0]->ID);
-                    }
+                    $this->set_first_image_as_thumbnail($post_id);
                     if ($this->importonlyfirstimg) {
                         break;
                     }
@@ -437,6 +435,22 @@ class wpursstoposts {
             'ID' => $post_id,
             'post_content' => $post_content
         ));
+    }
+
+    /* Set first image as thumbnail image
+    -------------------------- */
+
+    public function set_first_image_as_thumbnail($post_id) {
+        // Set first image as thumbnail image
+        $attachments = get_posts(array(
+            'post_type' => 'attachment',
+            'posts_per_page' => 1,
+            'post_status' => 'any',
+            'post_parent' => $post_id
+        ));
+        if (!empty($attachments)) {
+            set_post_thumbnail($post_id, $attachments[0]->ID);
+        }
     }
 
     /* ----------------------------------------------------------
