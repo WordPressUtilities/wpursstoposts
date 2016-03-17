@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU RSS to posts
 Plugin URI: https://github.com/WordPressUtilities/wpursstoposts
-Version: 1.4
+Version: 1.4.1
 Description: Easily import RSS into posts
 Author: Darklg
 Author URI: http://darklg.me/
@@ -243,8 +243,9 @@ class wpursstoposts {
 
     public function set_cron() {
         // Schedule cron
-        if (!wp_next_scheduled($this->hookcron)) {
-            wp_schedule_event(time(), 'hourly', $this->hookcron);
+        $next_schedule = wp_next_scheduled($this->hookcron);
+        if (!$next_schedule || $next_schedule + 10 < time()) {
+            wp_schedule_event(time() + 3600, 'hourly', $this->hookcron);
         }
 
         $callback_cron = array(&$this, 'crontab_action');
