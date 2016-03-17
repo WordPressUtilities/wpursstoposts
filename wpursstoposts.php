@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU RSS to posts
 Plugin URI: https://github.com/WordPressUtilities/wpursstoposts
-Version: 1.4.1
+Version: 1.4.2
 Description: Easily import RSS into posts
 Author: Darklg
 Author URI: http://darklg.me/
@@ -51,6 +51,7 @@ class wpursstoposts {
         $this->user_cap = apply_filters('wpursstoposts_user_cap', $this->user_cap);
 
         $this->options = array(
+            'admin_slug' => 'edit.php?post_type=' . $this->posttype,
             'plugin_publicname' => 'RSS to posts',
             'plugin_name' => 'RSS to posts',
             'plugin_userlevel' => $this->user_cap,
@@ -177,6 +178,9 @@ class wpursstoposts {
             add_action('admin_menu', array(&$this,
                 'admin_menu'
             ));
+            add_filter("plugin_action_links_" . plugin_basename(__FILE__), array(&$this,
+                'add_settings_link'
+            ));
             add_action('admin_post_wpursstoposts_postaction', array(&$this,
                 'postAction'
             ));
@@ -245,6 +249,7 @@ class wpursstoposts {
         // Schedule cron
         $next_schedule = wp_next_scheduled($this->hookcron);
         if (!$next_schedule || $next_schedule + 10 < time()) {
+            wp_clear_scheduled_hook($this->hookcron);
             wp_schedule_event(time() + 3600, 'hourly', $this->hookcron);
         }
 
@@ -458,10 +463,19 @@ class wpursstoposts {
       Admin menu
     ---------------------------------------------------------- */
 
+    /* Settings link */
+
+    public function add_settings_link($links) {
+        $settings_link = '<a href="' . admin_url($this->options['admin_slug'].'&page='. $this->options['plugin_pageslug']) . '">' . __('Settings') . '</a>';
+        array_unshift($links, $settings_link);
+        return $links;
+    }
+
     public function admin_menu() {
-        add_submenu_page('edit.php?post_type=' . $this->posttype, $this->options['plugin_name'] . ' - ' . __('Settings'), __('Import Settings', 'wpursstoposts'), $this->options['plugin_userlevel'], $this->options['plugin_pageslug'], array(&$this,
+        add_submenu_page($this->options['admin_slug'], $this->options['plugin_name'] . ' - ' . __('Settings'), __('Import Settings', 'wpursstoposts'), $this->options['plugin_userlevel'], $this->options['plugin_pageslug'], array(&$this,
             'admin_settings'
         ), '', 110);
+
     }
 
     public function admin_settings() {
@@ -530,6 +544,29 @@ class wpursstoposts {
     public function set_cache_duration() {
         return $this->cacheduration;
     }
+
+    /* ----------------------------------------------------------
+      Activation
+    ---------------------------------------------------------- */
+
+    public function install() {
+        wp_clear_scheduled_hook($this->hookcron);
+        wp_schedule_event(time() + 3600, 'hourly', $this->hookcron);
+        flush_rewrite_rules();
+    }
+
+    public function deactivation() {
+        wp_clear_scheduled_hook($this->hookcron);
+        flush_rewrite_rules();
+    }
+
 }
 
 $wpursstoposts = new wpursstoposts();
+
+register_activation_hook(__FILE__, array(&$wpursstoposts,
+    'install'
+));
+register_deactivation_hook(__FILE__, array(&$wpursstoposts,
+    'deactivation'
+));
