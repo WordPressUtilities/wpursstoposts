@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU RSS to posts
 Plugin URI: https://github.com/WordPressUtilities/wpursstoposts
-Version: 1.4.2
+Version: 1.4.3
 Description: Easily import RSS into posts
 Author: Darklg
 Author URI: http://darklg.me/
@@ -466,7 +466,7 @@ class wpursstoposts {
     /* Settings link */
 
     public function add_settings_link($links) {
-        $settings_link = '<a href="' . admin_url($this->options['admin_slug'].'&page='. $this->options['plugin_pageslug']) . '">' . __('Settings') . '</a>';
+        $settings_link = '<a href="' . admin_url($this->options['admin_slug'] . '&page=' . $this->options['plugin_pageslug']) . '">' . __('Settings') . '</a>';
         array_unshift($links, $settings_link);
         return $links;
     }
@@ -526,12 +526,12 @@ class wpursstoposts {
 
     public function set_wputaxometas_fields($fields) {
         $fields['rssfeeds_thumbnail'] = array(
-            'label' => 'Thumbnail',
+            'label' => __('Thumbnail', 'wpursstoposts'),
             'taxonomies' => array($this->taxonomy),
             'type' => 'attachment'
         );
         $fields['rssfeeds_src'] = array(
-            'label' => 'Source',
+            'label' => __('Source', 'wpursstoposts'),
             'taxonomies' => array($this->taxonomy),
             'type' => 'url'
         );

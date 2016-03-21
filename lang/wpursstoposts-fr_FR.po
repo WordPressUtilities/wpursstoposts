@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: WPU RSS to posts\n"
-"POT-Creation-Date: 2016-03-14 18:07+0100\n"
+"POT-Creation-Date: 2016-03-21 12:28+0100\n"
 "PO-Revision-Date: \n"
 "Last-Translator: Darklg <darklg.blog@gmail.com>\n"
 "Language-Team: \n"
@@ -15,93 +15,101 @@ msgstr ""
 "X-Poedit-KeywordsList: __;_e\n"
 "X-Poedit-SearchPath-0: ../.\n"
 
-#: .././inc/WPUBaseSettings.php:39 .././wpursstoposts.php:120
-#: .././wpursstoposts.php:446
+#: .././inc/WPUBaseSettings.php:39 .././wpursstoposts.php:121
+#: .././wpursstoposts.php:475
 msgid "Import Settings"
 msgstr "Réglages d'import"
 
-#: .././wpursstoposts.php:129
+#: .././wpursstoposts.php:130
 msgid "Feeds"
 msgstr "Flux"
 
-#: .././wpursstoposts.php:134
+#: .././wpursstoposts.php:135
 msgid "Max items"
 msgstr "Nombre d'articles maximum"
 
-#: .././wpursstoposts.php:139
+#: .././wpursstoposts.php:140
 msgid "Import images in posts."
 msgstr "Importer des images dans les articles."
 
-#: .././wpursstoposts.php:140
+#: .././wpursstoposts.php:141
 msgid "Import images"
 msgstr "Importer les images"
 
-#: .././wpursstoposts.php:145
+#: .././wpursstoposts.php:146
 msgid "Only the first image in the post content will be imported."
 msgstr "Seule la première image dans le contenu de l'article sera importée."
 
-#: .././wpursstoposts.php:146
+#: .././wpursstoposts.php:147
 msgid "Import only first"
 msgstr "Importer seulement la première"
 
-#: .././wpursstoposts.php:151
+#: .././wpursstoposts.php:152
 msgid "Posts are created with a draft status."
 msgstr "Les articles sont créés avec un statut \"brouillon\"."
 
-#: .././wpursstoposts.php:152
+#: .././wpursstoposts.php:153
 msgid "Import as draft"
 msgstr "Importer comme brouillon"
 
-#: .././wpursstoposts.php:190 .././wpursstoposts.php:194
+#: .././wpursstoposts.php:194 .././wpursstoposts.php:198
 msgid "RSS item"
 msgstr "Article RSS"
 
-#: .././wpursstoposts.php:191 .././wpursstoposts.php:193
+#: .././wpursstoposts.php:195 .././wpursstoposts.php:197
 msgid "RSS items"
 msgstr "Articles RSS"
 
-#: .././wpursstoposts.php:203 .././wpursstoposts.php:204
+#: .././wpursstoposts.php:207 .././wpursstoposts.php:208
 msgid "RSS Feeds"
 msgstr "Flux RSS"
 
-#: .././wpursstoposts.php:205
+#: .././wpursstoposts.php:209
 msgid "RSS Feed"
 msgstr "Flux RSS"
 
-#: .././wpursstoposts.php:288
+#: .././wpursstoposts.php:294
 #, php-format
 msgid "%s new item"
 msgstr "%s nouvel article"
 
-#: .././wpursstoposts.php:290
+#: .././wpursstoposts.php:296
 #, php-format
 msgid "%s new items"
 msgstr "%s nouveaux articles"
 
-#: .././wpursstoposts.php:294
+#: .././wpursstoposts.php:300
 msgid "No new items imported"
 msgstr "Aucun nouvel article importé"
 
-#: .././wpursstoposts.php:446
+#: .././wpursstoposts.php:469 .././wpursstoposts.php:475
 msgid "Settings"
 msgstr "Réglages"
 
-#: .././wpursstoposts.php:455
+#: .././wpursstoposts.php:485
 msgid "Tools"
 msgstr "Outils"
 
-#: .././wpursstoposts.php:465
+#: .././wpursstoposts.php:495
 #, php-format
 msgid "Next automated import in %s’%s’’"
 msgstr "Prochain import automatique dans %s min et %s s"
 
-#: .././wpursstoposts.php:467
+#: .././wpursstoposts.php:497
 msgid "Import now"
 msgstr "Importer maintenant"
 
-#: .././wpursstoposts.php:475
+#: .././wpursstoposts.php:505
 msgid "Save Changes"
 msgstr "Sauvegarder les modifications"
+
+#: .././wpursstoposts.php:529
+msgid "Thumbnail"
+msgstr "Miniature"
+
+#: .././wpursstoposts.php:534
+msgid "Source"
+msgstr "Source"
 
 #~ msgid "%s new item(s)"
 #~ msgstr "%s nouveau(x) article(s)"
