@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: WPU RSS to posts\n"
-"POT-Creation-Date: 2016-03-21 12:28+0100\n"
+"POT-Creation-Date: 2016-03-30 23:33+0200\n"
 "PO-Revision-Date: \n"
 "Last-Translator: Darklg <darklg.blog@gmail.com>\n"
 "Language-Team: \n"
@@ -16,9 +16,13 @@ msgstr ""
 "X-Poedit-SearchPath-0: ../.\n"
 
 #: .././inc/WPUBaseSettings.php:39 .././wpursstoposts.php:121
-#: .././wpursstoposts.php:475
+#: .././wpursstoposts.php:473
 msgid "Import Settings"
 msgstr "Réglages d'import"
+
+#: .././inc/WPUBaseSettings.php:140
+msgid "Settings saved."
+msgstr "Paramètres sauvegardés."
 
 #: .././wpursstoposts.php:130
 msgid "Feeds"
@@ -68,46 +72,46 @@ msgstr "Flux RSS"
 msgid "RSS Feed"
 msgstr "Flux RSS"
 
-#: .././wpursstoposts.php:294
+#: .././wpursstoposts.php:292
 #, php-format
 msgid "%s new item"
 msgstr "%s nouvel article"
 
-#: .././wpursstoposts.php:296
+#: .././wpursstoposts.php:294
 #, php-format
 msgid "%s new items"
 msgstr "%s nouveaux articles"
 
-#: .././wpursstoposts.php:300
+#: .././wpursstoposts.php:298
 msgid "No new items imported"
 msgstr "Aucun nouvel article importé"
 
-#: .././wpursstoposts.php:469 .././wpursstoposts.php:475
+#: .././wpursstoposts.php:467 .././wpursstoposts.php:473
 msgid "Settings"
 msgstr "Réglages"
 
-#: .././wpursstoposts.php:485
+#: .././wpursstoposts.php:491
 msgid "Tools"
 msgstr "Outils"
 
-#: .././wpursstoposts.php:495
+#: .././wpursstoposts.php:494
 #, php-format
 msgid "Next automated import in %s’%s’’"
 msgstr "Prochain import automatique dans %s min et %s s"
 
-#: .././wpursstoposts.php:497
+#: .././wpursstoposts.php:495
 msgid "Import now"
 msgstr "Importer maintenant"
 
-#: .././wpursstoposts.php:505
+#: .././wpursstoposts.php:503
 msgid "Save Changes"
 msgstr "Sauvegarder les modifications"
 
-#: .././wpursstoposts.php:529
+#: .././wpursstoposts.php:528
 msgid "Thumbnail"
 msgstr "Miniature"
 
-#: .././wpursstoposts.php:534
+#: .././wpursstoposts.php:533
 msgid "Source"
 msgstr "Source"
 

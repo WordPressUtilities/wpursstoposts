@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU RSS to posts
 Plugin URI: https://github.com/WordPressUtilities/wpursstoposts
-Version: 1.4.3
+Version: 1.4.4
 Description: Easily import RSS into posts
 Author: Darklg
 Author URI: http://darklg.me/
@@ -270,12 +270,10 @@ class wpursstoposts {
     public function parse_feeds($from_cron = false) {
 
         global $wpdb;
-        include_once ABSPATH . WPINC . '/feed.php';
-        if ($this->importimg) {
-            require_once ABSPATH . 'wp-admin/includes/media.php';
-            require_once ABSPATH . 'wp-admin/includes/file.php';
-            require_once ABSPATH . 'wp-admin/includes/image.php';
-        }
+        require_once ABSPATH . WPINC . '/feed.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
 
         // Extract RSS feeds
         $nb_imports = (count($this->feeds) + 1) * $this->maxitems;
@@ -305,11 +303,11 @@ class wpursstoposts {
     public function import_feed($url, $latest_imports) {
 
         $feed = fetch_feed($url);
-        $feed->force_feed(true);
         if (is_wp_error($feed)) {
             return false;
         }
 
+        $feed->force_feed(true);
         $import_number = 0;
 
         $maxitems = $feed->get_item_quantity($this->maxitems);
@@ -480,11 +478,6 @@ class wpursstoposts {
 
     public function admin_settings() {
 
-        echo '<div class="wrap"><h1>' . apply_filters('wpursstoposts_admin_page_title', get_admin_page_title()) . '</h1>';
-
-        echo '<h2>' . __('Tools') . '</h2>';
-        echo '<form action="' . admin_url('admin-post.php') . '" method="post">';
-        echo '<input type="hidden" name="action" value="wpursstoposts_postaction">';
         $schedule = wp_next_scheduled($this->hookcron);
         $seconds = $schedule - time();
         $minutes = 0;
@@ -492,18 +485,24 @@ class wpursstoposts {
             $minutes = (int) ($seconds / 60);
             $seconds = $seconds % 60;
         }
-        echo '<p>' . sprintf(__('Next automated import in %s’%s’’', 'wpursstoposts'), $minutes, $seconds) . '</p>';
-
-        submit_button(__('Import now', 'wpursstoposts'), 'primary', 'import_now');
-
-        echo '</form>';
-        echo '<hr />';
+        echo '<div class="wrap"><h1>' . apply_filters('wpursstoposts_admin_page_title', get_admin_page_title()) . '</h1>';
+        settings_errors($this->settings_details['option_id']);
+        if (!empty($this->feeds)) {
+            echo '<h2>' . __('Tools') . '</h2>';
+            echo '<form action="' . admin_url('admin-post.php') . '" method="post">';
+            echo '<input type="hidden" name="action" value="wpursstoposts_postaction">';
+            echo '<p>' . sprintf(__('Next automated import in %s’%s’’', 'wpursstoposts'), $minutes, $seconds) . '</p>';
+            submit_button(__('Import now', 'wpursstoposts'), 'primary', 'import_now');
+            echo '</form>';
+            echo '<hr />';
+        }
 
         echo '<form action="' . admin_url('options.php') . '" method="post">';
         settings_fields($this->settings_details['option_id']);
         do_settings_sections($this->options['plugin_id']);
         echo submit_button(__('Save Changes', 'wpursstoposts'));
         echo '</form>';
+
         echo '</div>';
     }
 
