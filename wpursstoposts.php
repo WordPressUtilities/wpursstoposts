@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU RSS to posts
 Plugin URI: https://github.com/WordPressUtilities/wpursstoposts
-Version: 1.4.4
+Version: 1.5
 Description: Easily import RSS into posts
 Author: Darklg
 Author URI: http://darklg.me/
@@ -23,16 +23,11 @@ class wpursstoposts {
     private $importonlyfirstimg = true;
     private $hookcron = 'wpursstoposts_crontab';
     private $option_id = 'wpursstoposts_options';
+    private $public_name = 'RSS to posts';
 
     public function __construct() {
         add_action('init', array(&$this,
             'init'
-        ));
-        add_action('init', array(&$this,
-            'set_cron'
-        ));
-        add_action('plugins_loaded', array(&$this,
-            'load_plugin_textdomain'
         ));
         add_action('plugins_loaded', array(&$this,
             'set_posttype_taxos'
@@ -44,6 +39,9 @@ class wpursstoposts {
             'set_posttype_taxos_classic'
         ));
         $this->set_values();
+
+        include 'inc/WPUBaseCron.php';
+        $this->basecron = new \wpursstoposts\WPUBaseCron();
     }
 
     public function set_values() {
@@ -52,8 +50,8 @@ class wpursstoposts {
 
         $this->options = array(
             'admin_slug' => 'edit.php?post_type=' . $this->posttype,
-            'plugin_publicname' => 'RSS to posts',
-            'plugin_name' => 'RSS to posts',
+            'plugin_publicname' => $this->public_name,
+            'plugin_name' => $this->public_name,
             'plugin_userlevel' => $this->user_cap,
             'plugin_id' => 'wpursstoposts',
             'plugin_pageslug' => 'wpursstoposts'
@@ -166,12 +164,15 @@ class wpursstoposts {
         }
     }
 
-    public function load_plugin_textdomain() {
+    public function plugins_loaded() {
+
         load_plugin_textdomain('wpursstoposts', false, dirname(plugin_basename(__FILE__)) . '/lang/');
 
-    }
-
-    public function plugins_loaded() {
+        $this->basecron->init(array(
+            'pluginname' => $this->public_name,
+            'cronhook' => $this->hookcron,
+            'croninterval' => apply_filters('wpursstoposts_cron_interval', 3600)
+        ));
 
         if (is_admin()) {
             // Admin page
@@ -243,20 +244,6 @@ class wpursstoposts {
     public function wputh_set_theme_taxonomies($taxonomies) {
         $taxonomies[$this->taxonomy] = $this->taxonomy_info;
         return $taxonomies;
-    }
-
-    public function set_cron() {
-        // Schedule cron
-        $next_schedule = wp_next_scheduled($this->hookcron);
-        if (!$next_schedule || $next_schedule + 10 < time()) {
-            wp_clear_scheduled_hook($this->hookcron);
-            wp_schedule_event(time() + 3600, 'hourly', $this->hookcron);
-        }
-
-        $callback_cron = array(&$this, 'crontab_action');
-        if (!has_action($this->hookcron, $callback_cron)) {
-            add_action($this->hookcron, $callback_cron);
-        }
     }
 
     public function crontab_action() {
@@ -419,7 +406,7 @@ class wpursstoposts {
         // For each image found
         foreach ($matches[0] as $match_nb => $img_url) {
             // Import image
-            $image = media_sideload_image($img_url, $post_id, 'src');
+            $image = media_sideload_image($img_url, $post_id, get_the_title($post_id));
             if (!is_wp_error($image)) {
                 preg_match($regex_image, $image, $new_image_url);
                 if (isset($new_image_url[0]) && !empty($new_image_url[0])) {
@@ -549,16 +536,20 @@ class wpursstoposts {
     ---------------------------------------------------------- */
 
     public function install() {
-        wp_clear_scheduled_hook($this->hookcron);
-        wp_schedule_event(time() + 3600, 'hourly', $this->hookcron);
         flush_rewrite_rules();
     }
 
     public function deactivation() {
-        wp_clear_scheduled_hook($this->hookcron);
         flush_rewrite_rules();
+        $this->basecron->uninstall();
     }
 
+    public function uninstall() {
+        flush_rewrite_rules();
+        delete_option($this->option_id);
+        $this->basecron->uninstall();
+        delete_post_meta('rss_permalink');
+    }
 }
 
 $wpursstoposts = new wpursstoposts();
